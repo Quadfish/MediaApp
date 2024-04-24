@@ -1,8 +1,7 @@
-import 'dart:collection';
-import 'dart:html';
-
 import 'package:media_app/components/commentfield.dart';
 import 'package:media_app/components/like.dart';
+import 'package:media_app/components/time.dart';
+
 
 import '../components/imports.dart';
 
@@ -154,7 +153,7 @@ class _PostState extends State<Post> {
           ),
         ],
       ),
-          StreamBuilder<QuerySnapshot>(
+          /*StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
             .collection("User Posts")
             .doc(widget.postId)
@@ -183,7 +182,7 @@ class _PostState extends State<Post> {
                 }).toList(),
               );
             },
-          )
+          )*/
         ],
       ),
     );

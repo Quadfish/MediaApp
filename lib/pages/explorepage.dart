@@ -17,9 +17,12 @@ class ExplorePage extends StatefulWidget {
 }
 class _ExplorePageState extends State<ExplorePage> {
 
+    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
     String? currentUserID = FirebaseAuth.instance.currentUser?.uid;
 
     final textController = TextEditingController();
+
 
   void signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
@@ -64,17 +67,22 @@ class _ExplorePageState extends State<ExplorePage> {
       ),
     );
   }
-  void postMessage () {
+  
+  Future<void> postMessage () async {
+
     if (textController.text.isNotEmpty) {
-      FirebaseFirestore.instance
-      .collection("User Posts")
-      .add({
-        'userID': currentUserID,
-        'message': textController.text,
-        'TimeStamp': Timestamp.now(),
-        'Likes': [],
+      if (currentUserID != null) {
+        DocumentSnapshot profileSnapshot = await _firestore.collection('profiles').doc(currentUserID).get();
+        FirebaseFirestore.instance
+        .collection("User Posts")
+        .add({
+          'userID': currentUserID,
+          'displayName': profileSnapshot['displayName'],
+          'message': textController.text,
+          'TimeStamp': Timestamp.now(),
+          'Likes': [],
       });
-    }
+    }}
     setState(() {
       textController.clear();
     });
@@ -117,7 +125,7 @@ class _ExplorePageState extends State<ExplorePage> {
                       final post = snapshot.data!.docs[index];
                       return Post(
                         message: post['message'], 
-                        user: post['userID'], 
+                        user: post['displayName'], 
                         postId: post.id, 
                         likes: List<String>.from(post['Likes'] ?? []), 
                        );
