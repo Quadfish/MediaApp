@@ -44,6 +44,14 @@ class _ExplorePageState extends State<ExplorePage> {
     );
   }
 
+  void goToExplore(BuildContext context) {
+    Navigator.pop(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ExplorePage()),
+    );
+  }
+
   void goToCreatePost(BuildContext context) {
     Navigator.push(
       context,
@@ -63,6 +71,7 @@ class _ExplorePageState extends State<ExplorePage> {
         'TimeStamp': Timestamp.now(),
         'image': "",
         'Likes': [],
+        'profilePic': docSnap['profilePic'],
       });
     }
     setState(() {
@@ -83,6 +92,7 @@ class _ExplorePageState extends State<ExplorePage> {
         onSettingTap: () => goToSettings(context),
         onSignOut: () => signOut(context),
         onHomeTap: () => goToHome(context),
+        onExploreTap: () => goToExplore(context),
       ),
       body: Column(
         children: [
@@ -102,6 +112,7 @@ class _ExplorePageState extends State<ExplorePage> {
                         postId: post.id,
                         likes: List<String>.from(post['Likes'] ?? []),
                         image: post['image'] ?? null,
+                        profilePic: post['profilePic'],
                       );
                     },
                   );

@@ -39,6 +39,7 @@ class _CreatePostState extends State<CreatePost> {
       'displayName': docSnap['displayName'],
       'message': _postTextController.text,
       'userID': currentUser.uid,
+      'profilePic': docSnap['profilePic'],
     };
 
     if (_selectedImage != null) {

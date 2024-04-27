@@ -6,6 +6,7 @@ class Post extends StatefulWidget {
   final String postId;
   final List<String> likes;
   final String? image;
+  final String? profilePic;
 
   const Post({
     super.key, 
@@ -14,6 +15,7 @@ class Post extends StatefulWidget {
     required this.postId, 
     required this.likes, 
     this.image,
+    required this.profilePic,
   });
 
   @override
@@ -23,7 +25,6 @@ class Post extends StatefulWidget {
 class _PostState extends State<Post> {
   String? currentUserID = FirebaseAuth.instance.currentUser?.uid;
   bool isLiked = false;
-
   final _commentTextController = TextEditingController();
 
   @override
@@ -171,6 +172,12 @@ void showCommentDialog() {
           const SizedBox(width: 20,),
           Row(
             children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundImage: widget.profilePic == null
+                  ? const AssetImage('assets/Default_pfp.png') as ImageProvider // Default if no profile picture
+                  : NetworkImage(widget.profilePic!), // Display profile picture
+              ),
               Column(
                 children: [
                   LikeButton(
