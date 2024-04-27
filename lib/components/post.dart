@@ -72,11 +72,11 @@ void showCommentDialog() {
         title: Text("Comments"),
         content: Container(
           constraints: BoxConstraints(
-            maxHeight: 300, // Fixed maximum height for the dialog content
+            maxHeight: 300, 
           ),
           child: Column(
             children: [
-              Expanded( // Allows the StreamBuilder to take up the remaining space
+              Expanded( 
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                     .collection("User Posts")
@@ -97,7 +97,7 @@ void showCommentDialog() {
 
                     final comments = snapshot.data?.docs ?? [];
 
-                    return SingleChildScrollView( // Allows comments to scroll
+                    return SingleChildScrollView(
                       child: Column(
                         children: comments.map((doc) {
                           final commentData = doc.data() as Map<String, dynamic>;
@@ -113,7 +113,7 @@ void showCommentDialog() {
                   },
                 ),
               ),
-              TextField( // Fixed at the bottom, doesn't scroll with comments
+              TextField( 
                 controller: _commentTextController,
                 decoration: InputDecoration(hintText: "Write a comment..."),
               ),
@@ -124,7 +124,7 @@ void showCommentDialog() {
           TextButton(
             onPressed: () {
               addComment(_commentTextController.text);
-              _commentTextController.clear(); // Clear the text field
+              _commentTextController.clear(); 
             },
             child: Text("Post"),
           ),
@@ -174,7 +174,7 @@ void showCommentDialog() {
               Column(
                 children: [
                   LikeButton(
-                    isLiked: true, 
+                    isLiked: isLiked, 
                     onTap: toggleLike,
                   ),
               
@@ -213,43 +213,13 @@ void showCommentDialog() {
                   return Text(
                     commentCount.toString(), // Display the comment count
                     style: TextStyle(color: Colors.grey),
-                  );
-                },
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-          /*StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-            .collection("User Posts")
-            .doc(widget.postId)
-            .collection("Comments")
-            .orderBy("CommentTime", descending: true)
-            .snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
-
-              return ListView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: snapshot.data!.docs.map((doc) {
-                  
-                  final commentData = doc.data() as Map<String, dynamic>;
-
-                  return Comment(
-                    text: commentData["CommentText"],
-                    user: commentData["CommentedBy"],
-                    time: formatDate(commentData["CommentTime"]),
-                  );
-                }).toList(),
-              );
-            },
-          )*/
         ],
       ),
     );

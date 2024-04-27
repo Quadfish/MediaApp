@@ -49,21 +49,20 @@ class _CreatePostState extends State<CreatePost> {
       postData['image'] = imageUrl;
     }
 
-    // Use Firestore's add() to automatically generate the post ID
+  
     final userPostsCollection = FirebaseFirestore.instance.collection('User Posts');
-    DocumentReference newPostRef = await userPostsCollection.add(postData); // Firestore generates the unique post ID
+    DocumentReference newPostRef = await userPostsCollection.add(postData); 
 
-    // Retrieve the post ID from the new document reference
     String newPostId = newPostRef.id;
 
     _postTextController.clear();
     _selectedImage = null;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Post created successfully with ID: $newPostId')), // Display the generated post ID
+      SnackBar(content: Text('Post created successfully with ID: $newPostId')), 
     );
 
-    Navigator.pop(context); // Navigate back or close the page
+    Navigator.pop(context); 
   }
 
   @override

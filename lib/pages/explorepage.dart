@@ -47,8 +47,27 @@ class _ExplorePageState extends State<ExplorePage> {
   void goToCreatePost(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => CreatePost()), // Navigate to the new "Post" page
+      MaterialPageRoute(builder: (context) => CreatePost()), 
     );
+  }
+
+  void postMessage () async {
+    DocumentSnapshot docSnap = await _firestore.collection('profiles').doc(currentUserID).get();
+    if (textController.text.isNotEmpty) {
+      FirebaseFirestore.instance
+      .collection("User Posts")
+      .add({
+        'userID': currentUserID,
+        'displayName': docSnap['displayName'],
+        'message': textController.text,
+        'TimeStamp': Timestamp.now(),
+        'image': "",
+        'Likes': [],
+      });
+    }
+    setState(() {
+      textController.clear();
+    });
   }
 
   @override
@@ -64,10 +83,6 @@ class _ExplorePageState extends State<ExplorePage> {
         onSettingTap: () => goToSettings(context),
         onSignOut: () => signOut(context),
         onHomeTap: () => goToHome(context),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => goToCreatePost(context), // Trigger navigation to the "Create Post" page
-        child: Icon(Icons.add),
       ),
       body: Column(
         children: [
@@ -105,6 +120,12 @@ class _ExplorePageState extends State<ExplorePage> {
             padding: const EdgeInsets.all(25.0),
             child: Row(
               children: [
+                 IconButton(
+                  onPressed: () {
+                    goToCreatePost(context); 
+                  },
+                  icon: const Icon(Icons.camera_alt),
+                ),
                 Expanded(
                   child: MyTextField(
                     controller: textController,
@@ -113,11 +134,9 @@ class _ExplorePageState extends State<ExplorePage> {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {
-                    goToCreatePost(context); // Directs to new "Create Post" page
-                  },
-                  icon: const Icon(Icons.arrow_circle_up),
-                ),
+                    onPressed: postMessage, 
+                    icon: const Icon(Icons.arrow_circle_up),
+                    )
               ],
             ),
           ),
