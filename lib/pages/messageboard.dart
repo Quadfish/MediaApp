@@ -55,47 +55,50 @@ class _MessageBoardPageState extends State<MessageBoardPage> {
     );
   }
 
-  void _submitPost() async {
+  Future<void> _submitPost() async {
     String postText = _postController.text.trim();
     if (postText.isNotEmpty) {
-      // Retrieve currently logged-in user's UID
       String? userId = FirebaseAuth.instance.currentUser?.uid;
 
       if (userId != null) {
-        // Retrieve user's first name from Firestore
         DocumentSnapshot profileSnapshot = await _firestore.collection('profiles').doc(userId).get();
-        String? uid = profileSnapshot['userID'];
+        String? profilePic = profileSnapshot['profilePic']; // Retrieve profile picture URL
         String? displayName = profileSnapshot['displayName'];
         
-        // Add post to Firestore under the message board collection
-        _firestore.collection('message_boards').doc(widget.messageBoardTitle).collection('posts').add({
-          'text': postText,
-          'timestamp': Timestamp.now(),
-          'displayName': displayName,
-          'uid': uid,
-        });
+        _firestore.collection('message_boards')
+          .doc(widget.messageBoardTitle)
+          .collection('posts')
+          .add({
+            'text': postText,
+            'timestamp': Timestamp.now(),
+            'displayName': displayName,
+            'uid': userId,
+            'profilePic': profilePic, // Store profile picture URL
+          });
+
         _postController.clear();
       }
     }
   }
 
   Widget _buildPostList(String? currentUserID) {
-    return StreamBuilder(
+    return StreamBuilder<QuerySnapshot>(
       stream: _firestore
-          .collection('message_boards')
-          .doc(widget.messageBoardTitle)
-          .collection('posts')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
-      builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        .collection('message_boards')
+        .doc(widget.messageBoardTitle)
+        .collection('posts')
+        .orderBy('timestamp', descending: true)
+        .snapshots(),
+      builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
+
         return ListView.builder(
-          reverse: true, // Display list in reverse order
+          reverse: true,
           itemCount: snapshot.data!.docs.length,
           itemBuilder: (context, index) {
             final post = snapshot.data!.docs[index];
@@ -103,9 +106,9 @@ class _MessageBoardPageState extends State<MessageBoardPage> {
             final timestamp = (post['timestamp'] as Timestamp).toDate();
             final timeText = '${timestamp.hour}:${timestamp.minute}';
             final displayName = post['displayName'];
-            final postUserID = post['uid']; 
+            final postUserID = post['uid'];
+            final profilePic = post['profilePic']; // Get the profile picture URL
 
-            // Check if the current user sent this message
             final isCurrentUserMessage = postUserID == currentUserID;
 
             return Container(
@@ -115,26 +118,36 @@ class _MessageBoardPageState extends State<MessageBoardPage> {
                 border: Border.all(color: isCurrentUserMessage ? Colors.green : Colors.blue),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row( // Use Row to display profile picture and post content
                 children: [
-                  Text(
-                    displayName,
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundImage: profilePic == null
+                      ? AssetImage('assets/default_profile.png') as ImageProvider // Default if no profile picture
+                      : NetworkImage(profilePic), // Display profile picture
                   ),
-                  SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        postText,
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Text(
-                        timeText,
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
+                  SizedBox(width: 10), // Add spacing
+                  Flexible( // Ensure text wrapping
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayName,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          postText, // Ensure text wraps
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Text(
+                            timeText, 
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

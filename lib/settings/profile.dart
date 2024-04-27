@@ -38,7 +38,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final imageUrl = await imageRef.getDownloadURL();
 
     await _firestore.collection('profiles').doc(_currentUserID).update({
-      'profilePictureUrl': imageUrl,
+      'profilePic': imageUrl,
     });
 
     setState(() {
@@ -94,7 +94,7 @@ class _ProfilePageState extends State<ProfilePage> {
           }
 
           final profileData = snapshot.data?.data() as Map<String, dynamic>;
-          final profilePictureUrl = profileData['profilePictureUrl'] ?? '';
+          final profilePic = profileData['profilePic'] ?? '';
           final displayName = _displayNameController.text = profileData['displayName'] ?? '';
           final bio = _bioController.text = profileData['bio'] ?? '';
 
@@ -107,9 +107,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   onTap: _selectProfilePicture, // Select a new profile picture
                   child: CircleAvatar(
                     radius: 50,
-                    backgroundImage: profilePictureUrl.isEmpty
+                    backgroundImage: profilePic.isEmpty
                       ? AssetImage('assets/Default_pfp.png') as ImageProvider // Default if no picture
-                      : NetworkImage(profilePictureUrl), // Load from Firestore
+                      : NetworkImage(profilePic), // Load from Firestore
                   ),
                 ),
                 const SizedBox(height: 16),
