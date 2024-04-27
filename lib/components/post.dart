@@ -1,8 +1,3 @@
-import 'package:media_app/components/commentfield.dart';
-import 'package:media_app/components/like.dart';
-import 'package:media_app/components/time.dart';
-
-
 import '../components/imports.dart';
 
 class Post extends StatefulWidget {
@@ -10,6 +5,7 @@ class Post extends StatefulWidget {
   final String user;
   final String postId;
   final List<String> likes;
+  final String? image;
 
   const Post({
     super.key, 
@@ -17,6 +13,7 @@ class Post extends StatefulWidget {
     required this.user, 
     required this.postId, 
     required this.likes, 
+    this.image,
   });
 
   @override
@@ -54,47 +51,96 @@ class _PostState extends State<Post> {
       }
     }
 
-  void addComment(String commentText) {
+  void addComment(String commentText) async {
+      DocumentSnapshot snap = await FirebaseFirestore.instance.collection('profiles').doc(currentUserID).get();
       FirebaseFirestore.instance
       .collection("User Posts")
       .doc(widget.postId)
       .collection("Comments")
       .add({
         "CommentText" : commentText,
-        "CommentedBy" : currentUserID,
-        "CommentTime" : Timestamp.now()
+        "CommentedBy" : snap['displayName'],
+        "CommentTime" : formatDate(Timestamp.now())
       });
     }
     
-  void showCommentDialog() {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text("Add Comment"),
-          content: TextField(
-            controller: _commentTextController,
-            decoration: InputDecoration(hintText: "Write a comment. . ."),
+void showCommentDialog() {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text("Comments"),
+        content: Container(
+          constraints: BoxConstraints(
+            maxHeight: 300, // Fixed maximum height for the dialog content
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                addComment(_commentTextController.text);
-                Navigator.pop(context);
-                _commentTextController.clear();
-              },
-              child: Text("Post"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _commentTextController.clear();
-              }, 
-              child: Text("Cancel"),
-            ),
-          ],
+          child: Column(
+            children: [
+              Expanded( // Allows the StreamBuilder to take up the remaining space
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                    .collection("User Posts")
+                    .doc(widget.postId)
+                    .collection("Comments")
+                    .orderBy("CommentTime", descending: true)
+                    .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text("Error: ${snapshot.error}"),
+                      );
+                    }
+
+                    final comments = snapshot.data?.docs ?? [];
+
+                    return SingleChildScrollView( // Allows comments to scroll
+                      child: Column(
+                        children: comments.map((doc) {
+                          final commentData = doc.data() as Map<String, dynamic>;
+                          return ListTile(
+                            title: Text(commentData["CommentText"]),
+                            subtitle: Text(
+                              "By: ${commentData["CommentedBy"]} at ${commentData["CommentTime"]}",
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              TextField( // Fixed at the bottom, doesn't scroll with comments
+                controller: _commentTextController,
+                decoration: InputDecoration(hintText: "Write a comment..."),
+              ),
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              addComment(_commentTextController.text);
+              _commentTextController.clear(); // Clear the text field
+            },
+            child: Text("Post"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _commentTextController.clear();
+            },
+            child: Text("Cancel"),
+          ),
+        ],
       );
-  }
+    },
+  );
+}
+
 
 
   @override
@@ -112,8 +158,10 @@ class _PostState extends State<Post> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (widget.image != "")
+                Image.network(widget.image!, height: 200, fit: BoxFit.cover),
               Text(widget.message),
-              const SizedBox(height: 5),
+              const SizedBox(height: 10),
               Text(
                 widget.user,
                 style: TextStyle(color: Colors.grey[500]),
@@ -145,9 +193,28 @@ class _PostState extends State<Post> {
               CommentButton(onTap: showCommentDialog),
 
               const SizedBox(height: 5),
-              const Text(
-              '0',
-              style: TextStyle(color: Colors.grey),
+              StreamBuilder<QuerySnapshot>( // Stream the comments
+                stream: FirebaseFirestore.instance
+                  .collection("User Posts")
+                  .doc(widget.postId)
+                  .collection("Comments")
+                  .snapshots(), // Listen to changes in comments
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Text("Loading...", style: TextStyle(color: Colors.grey)); // Placeholder while loading
+                  }
+
+                  if (snapshot.hasError) {
+                    return Text("Error", style: TextStyle(color: Colors.red)); // Error handling
+                  }
+
+                  final commentCount = snapshot.data?.docs.length ?? 0; // Get the count of comments
+
+                  return Text(
+                    commentCount.toString(), // Display the comment count
+                    style: TextStyle(color: Colors.grey),
+                  );
+                },
               ),
             ],
           ),

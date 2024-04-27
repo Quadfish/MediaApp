@@ -1,93 +1,55 @@
-import 'package:flutter/services.dart';
-import 'package:media_app/components/post.dart';
-import 'package:media_app/components/textfield.dart';
-import 'package:media_app/pages/homepage.dart';
-
-import '../auth/authpage.dart';
-import '../components/drawer.dart';
 import '../components/imports.dart';
-import '../settings/profile.dart';
-import '../settings/settings.dart';
-
+import 'imports.dart';
+import '../settings/imports.dart';
+import '../auth/authpage.dart';
 
 class ExplorePage extends StatefulWidget {
-
   @override
-  State<ExplorePage> createState() => _ExplorePageState();
+  _ExplorePageState createState() => _ExplorePageState();
 }
+
 class _ExplorePageState extends State<ExplorePage> {
+  final textController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String? currentUserID = FirebaseAuth.instance.currentUser?.uid;
 
-    String? currentUserID = FirebaseAuth.instance.currentUser?.uid;
-
-    final textController = TextEditingController();
-
-
+  // Navigation methods for different pages
   void signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => AuthPage(),
-      ),
+      MaterialPageRoute(builder: (context) => AuthPage()),
     );
   }
-  void goToExplore(BuildContext context) {
-    Navigator.pop(context);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ExplorePage()),
-    );
-  }
+
   void goToProfile(BuildContext context) {
-    Navigator.pop(context);
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ProfilePage(),
-      ),
+      MaterialPageRoute(builder: (context) => ProfilePage()),
     );
   }
-  void goToSetting(BuildContext context) {
-    Navigator.pop(context);
+
+  void goToSettings(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => SettingsPage(),
-      ),
+      MaterialPageRoute(builder: (context) => SettingsPage()),
     );
   }
+
   void goToHome(BuildContext context) {
-    Navigator.pop(context);
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => HomePage(),
-      ),
+      MaterialPageRoute(builder: (context) => HomePage()),
     );
   }
-  
-  Future<void> postMessage () async {
 
-    if (textController.text.isNotEmpty) {
-      if (currentUserID != null) {
-        DocumentSnapshot profileSnapshot = await _firestore.collection('profiles').doc(currentUserID).get();
-        FirebaseFirestore.instance
-        .collection("User Posts")
-        .add({
-          'userID': currentUserID,
-          'displayName': profileSnapshot['displayName'],
-          'message': textController.text,
-          'TimeStamp': Timestamp.now(),
-          'Likes': [],
-      });
-    }}
-    setState(() {
-      textController.clear();
-    });
+  void goToCreatePost(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CreatePost()), // Navigate to the new "Post" page
+    );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -98,74 +60,68 @@ class _ExplorePageState extends State<ExplorePage> {
         backgroundColor: Colors.white,
       ),
       drawer: MyDrawer(
-        onExploreTap: () => goToExplore(context),
         onProfileTap: () => goToProfile(context),
-        onSettingTap: () => goToSetting(context),
+        onSettingTap: () => goToSettings(context),
         onSignOut: () => signOut(context),
-        onHomeTap:() => goToHome(context),
+        onHomeTap: () => goToHome(context),
       ),
-      body: Center(
-        child: 
-          Column(
-            children: [
-             Expanded(
-              child: StreamBuilder(
-                stream: FirebaseFirestore.instance
-                .collection("User Posts")
-                .orderBy(
-                  "TimeStamp",
-                  descending: false,
-                )
-                .snapshots(),
-                builder: ((context, snapshot) {
-                  if (snapshot.hasData) {
-                    return ListView.builder(
-                      itemCount: snapshot.data!.docs.length,
-                      itemBuilder: (context, index) {
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => goToCreatePost(context), // Trigger navigation to the "Create Post" page
+        child: Icon(Icons.add),
+      ),
+      body: Column(
+        children: [
+          // StreamBuilder to display all user posts
+          Expanded(
+            child: StreamBuilder(
+              stream: _firestore.collection("User Posts").orderBy("TimeStamp", descending: true).snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return ListView.builder(
+                    itemCount: snapshot.data!.docs.length,
+                    itemBuilder: (context, index) {
                       final post = snapshot.data!.docs[index];
                       return Post(
-                        message: post['message'], 
-                        user: post['displayName'], 
-                        postId: post.id, 
-                        likes: List<String>.from(post['Likes'] ?? []), 
-                       );
-                      },
-                    );
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        'Error:${snapshot.error}'
-                      ),
-                    );
-                  }
-                  return const Center(
-                    child: CircularProgressIndicator(),
+                        message: post['message'],
+                        user: post['displayName'],
+                        postId: post.id,
+                        likes: List<String>.from(post['Likes'] ?? []),
+                        image: post['image'] ?? null,
+                      );
+                    },
                   );
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error: ${snapshot.error}'),
+                  );
+                } else {
+                  return const Center(child: CircularProgressIndicator());
                 }
-              ),
-             ),
-           ),
-
-            Padding(
-              padding: const EdgeInsets.all(25.0),
-              child: Row(
-                 children: [
-                  Expanded(
-                    child: MyTextField(
-                      controller: textController,
-                      hintText: 'Post something on Explore . . .', 
-                      obscureText: false,
-                    ),
+              },
+            ),
+          ),
+          // Text input and post button
+          Padding(
+            padding: const EdgeInsets.all(25.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: MyTextField(
+                    controller: textController,
+                    hintText: 'Post something on Explore...',
+                    obscureText: false,
                   ),
-                  IconButton(
-                    onPressed: postMessage, 
-                    icon: const Icon(Icons.arrow_circle_up),
-                    )
-                 ],
-              ),
-            )
-          ],
-        ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    goToCreatePost(context); // Directs to new "Create Post" page
+                  },
+                  icon: const Icon(Icons.arrow_circle_up),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

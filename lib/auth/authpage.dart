@@ -59,6 +59,7 @@ class _AuthPageState extends State<AuthPage> {
           'displayName': displayNameController.text,
           'registrationTime': FieldValue.serverTimestamp(),
           'bio': "",
+          'profilePic': ""
         });
 
         // Automatically create settings page with login details and personal info

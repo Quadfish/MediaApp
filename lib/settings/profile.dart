@@ -1,4 +1,6 @@
 import '../components/imports.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -9,44 +11,68 @@ class _ProfilePageState extends State<ProfilePage> {
   final TextEditingController _displayNameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
+  final ImagePicker _imagePicker = ImagePicker();
+  
   late String _currentUserID;
   late Future<DocumentSnapshot> _profileFuture;
+  
+  File? _profileImage;
 
   @override
   void initState() {
     super.initState();
     _profileFuture = _fetchUserProfile();
-    _profileFuture.then((snapshot) {
-        setState(() {
-        _displayNameController.text = snapshot['displayName'] ?? '';
-        _bioController.text = snapshot['bio'] ?? '';
-        });
-      });
   }
 
   Future<DocumentSnapshot> _fetchUserProfile() async {
-    // Get the current user's ID from Firebase Authentication
     _currentUserID = FirebaseAuth.instance.currentUser!.uid;
-
-    // Fetch the user's profile from Firestore
     return _firestore.collection('profiles').doc(_currentUserID).get();
+  }
+
+  Future<void> _updateProfilePicture() async {
+    if (_profileImage == null) return;
+
+    final storageRef = FirebaseStorage.instance.ref();
+    final imageRef = storageRef.child('profile_pictures/$_currentUserID.jpg');
+    await imageRef.putFile(_profileImage!);
+    final imageUrl = await imageRef.getDownloadURL();
+
+    await _firestore.collection('profiles').doc(_currentUserID).update({
+      'profilePictureUrl': imageUrl,
+    });
+
+    setState(() {
+      _profileFuture = _fetchUserProfile();
+    });
+  }
+
+  Future<void> _selectProfilePicture() async {
+    final pickedImage = await _imagePicker.pickImage(source: ImageSource.gallery);
+
+    if (pickedImage != null) {
+      setState(() {
+        _profileImage = File(pickedImage.path);
+      });
+
+      await _updateProfilePicture(); // Upload and update the profile picture
+    }
   }
 
   Future<void> _updateProfile() async {
     try {
-      // Update the profile in Firestore
       await _firestore.collection('profiles').doc(_currentUserID).update({
         'displayName': _displayNameController.text,
         'bio': _bioController.text,
       });
-      // Fetch the updated profile
+
       setState(() {
         _profileFuture = _fetchUserProfile();
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Profile Updated!')));
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Profile updated!')));
     } catch (e) {
       print('Error updating profile: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update profile')));
     }
   }
 
@@ -61,64 +87,53 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else {
-            // Fetch the profile data
-            String firstName = snapshot.data!['firstName'];
-            String lastName = snapshot.data!['lastName'];
-            String email = snapshot.data!['email'];
-            Timestamp registrationTime = snapshot.data!['registrationTime'];
-            String displayName = _displayNameController.text;
-            String bio = _bioController.text;
-
-            return Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'First Name: $firstName',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  Text(
-                    'Last Name: $lastName',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Email: $email',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Registration Time: ${registrationTime.toDate()}',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 16),
-                  TextFormField(
-                    controller: _displayNameController..text = displayName,
-                    decoration: InputDecoration(
-                      labelText: 'Display Name',
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  TextFormField(
-                    controller: _bioController..text = bio,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      labelText: 'Bio',
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _updateProfile,
-                    child: Text('Update Profile'),
-                  ),
-                ],
-              ),
-            );
           }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final profileData = snapshot.data?.data() as Map<String, dynamic>;
+          final profilePictureUrl = profileData['profilePictureUrl'] ?? '';
+          final displayName = _displayNameController.text = profileData['displayName'] ?? '';
+          final bio = _bioController.text = profileData['bio'] ?? '';
+
+          return Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InkWell(
+                  onTap: _selectProfilePicture, // Select a new profile picture
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage: profilePictureUrl.isEmpty
+                      ? AssetImage('assets/Default_pfp.png') as ImageProvider // Default if no picture
+                      : NetworkImage(profilePictureUrl), // Load from Firestore
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _displayNameController,
+                  decoration: InputDecoration(
+                    labelText: 'Display Name',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _bioController,
+                  decoration: InputDecoration(
+                    labelText: 'Bio',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _updateProfile,
+                  child: Text('Update Profile'),
+                ),
+              ],
+            ),
+          );
         },
       ),
     );
