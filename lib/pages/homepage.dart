@@ -2,24 +2,23 @@ import 'package:media_app/components/drawer.dart';
 
 import '../auth/authpage.dart';
 import '../components/imports.dart';
-import '../settings/profile.dart';
-import '../settings/settings.dart';
+import '../settings/imports.dart';
 import 'messageboard.dart';
 import 'explorepage.dart';
 
 class HomePage extends StatelessWidget {
   final List<String> messageBoards = [
-    'Games',
-    'Business',
-    'Public Health',
-    'Study',
+    'Games!',
+    'Business!',
+    'Public Health!',
+    'Study!',
   ];
 
   static final Map<String, String> messageBoardImages = {
-    'Games': 'assets/Games.png',
-    'Business': 'assets/Business.png',
-    'Public Health': 'assets/Public_health.png',
-    'Study': 'assets/Study.png',
+    'Games!': 'assets/Games.png',
+    'Business!': 'assets/Business.png',
+    'Public Health!': 'assets/Public_health.png',
+    'Study!': 'assets/Study.png',
   };
 
  void signOut(BuildContext context) async {

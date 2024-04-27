@@ -65,7 +65,7 @@ class _MessageBoardPageState extends State<MessageBoardPage> {
         String? profilePic = profileSnapshot['profilePic']; // Retrieve profile picture URL
         String? displayName = profileSnapshot['displayName'];
         
-        _firestore.collection('message_boards')
+        _firestore.collection('message_boards2')
           .doc(widget.messageBoardTitle)
           .collection('posts')
           .add({
@@ -84,7 +84,7 @@ class _MessageBoardPageState extends State<MessageBoardPage> {
   Widget _buildPostList(String? currentUserID) {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore
-        .collection('message_boards')
+        .collection('message_boards2')
         .doc(widget.messageBoardTitle)
         .collection('posts')
         .orderBy('timestamp', descending: true)
