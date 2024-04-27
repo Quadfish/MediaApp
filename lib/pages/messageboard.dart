@@ -123,7 +123,7 @@ class _MessageBoardPageState extends State<MessageBoardPage> {
                   CircleAvatar(
                     radius: 20,
                     backgroundImage: profilePic == null
-                      ? AssetImage('assets/default_profile.png') as ImageProvider // Default if no profile picture
+                      ? AssetImage('assets/Default_pfp.png') as ImageProvider // Default if no profile picture
                       : NetworkImage(profilePic), // Display profile picture
                   ),
                   SizedBox(width: 10), // Add spacing
